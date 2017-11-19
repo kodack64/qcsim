@@ -1,10 +1,14 @@
 
 import qiskit._openquantumcompiler as openquantumcompiler
 from qcsim.qasm.backend.gpu import QasmBackendGpu
+from qcsim.qasm.backend.cpu import QasmBackendCpu
+from qcsim.qasm.backend.cython import QasmBackendCython
+from qcsim.qasm.backend.cythonomp import QasmBackendCythonOmp
+from qcsim.qasm.backend.ibmqx import QasmBackendIbmqx
 
 class QasmSimulator:
-    def __init__(self,data = None, file = None, backendName = "cpu",verbose=False):
-        backends = [QasmBackendGpu]
+    def __init__(self,data = None, file = None, backendName = "cpu",verbose=False, APIToken = None):
+        backends = [QasmBackendGpu, QasmBackendCpu, QasmBackendCython, QasmBackendCythonOmp, QasmBackendIbmqx]
 
         backendNames = dict([(sim.name,sim) for sim in backends])
         backendBasisGates = dict([(sim.name,sim.basisGates) for sim in backends ])
@@ -27,13 +31,16 @@ class QasmSimulator:
 
         circuit_dag = openquantumcompiler.compile(text,basis_gates=basisGates)
         circuit_json = openquantumcompiler.dag2json(circuit_dag,basis_gates=basisGates)
+        self.backendName = backendName
+        self.qasmtxt = circuit_dag.qasm(qeflag=True)
         self.circuit = circuit_json
         self.backend = backendNames[backendName]
         self.verbose = verbose
+        self.APIToken = APIToken
 
     def execute(self):
         self.simulator = self.backend(verbose= self.verbose)
-        self.simulator.simulate(self.circuit)
+        self.simulator.simulate(self.circuit,self.qasmtxt)
     def getState(self):
         if(self.simulator is None):
             raise Exception("simulation is not executed")

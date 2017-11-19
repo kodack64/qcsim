@@ -219,6 +219,19 @@ class KernelList():
     name = "MeasZ1",
     )
 
+    ker_U = cp.ElementwiseKernel(
+    in_params = "raw T x, int32 k, thrust::complex<double> u00, thrust::complex<double> u01, thrust::complex<double> u10, thrust::complex<double> u11",
+    out_params = "T y",
+    loop_prep = """
+    int mask = 1<<k;
+    """,
+    operation = """
+    if(i&mask==0) y = u00*x[i] + u01*x[i^mask];
+    else y = u10*x[i^mask] + u11*x[i];
+    """,
+    name = "U",
+    )
+
     ker_trace = cp.ReductionKernel(
     "T x",
     "T y",

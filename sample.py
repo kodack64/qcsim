@@ -18,28 +18,6 @@ def qasmTextTest():
     OPENQASM 2.0;
     include \"qelib1.inc\";
     include \"qelib2.inc\";
-    qreg q1[20];
-    h q1[0];
-    cx q1[0],q1[10];
-    zrot(pi/4) q1[0];
-    xxrot(pi/4) q1[0],q1[2];
-    gate test d0,d1{
-        xxrot(pi/4) d0,d1;
-        zrot(pi/4) d1;
-    }
-    test q1[0],q1[3];
-    """
-    sim = QasmSimulator(data=qasmText,backendName="gpu",verbose=False)
-    sim.execute()
-    sam = sim.getSample(sampleCount=10)
-    print("sample: ",sam)
-
-def qasmFileTest():
-    qasmText = \
-    """
-    OPENQASM 2.0;
-    include \"qelib1.inc\";
-    include \"qelib2.inc\";
     qreg q1[3];
     creg c1[3];
     creg c2[3];
@@ -57,19 +35,46 @@ def qasmFileTest():
     //measure q1 -> c2;
     if(c2 == 3) test q1[0],q1[1];
     """
+    sim = QasmSimulator(data=qasmText,backendName="gpu",verbose=False)
+    sim.execute()
+    sam = sim.getSample(sampleCount=10)
+    print("sample: ",sam)
+
+def qasmFileTest():
+    qasmText = \
+"""
+OPENQASM 2.0;
+include \"qelib1.inc\";
+include \"qelib2.inc\";
+qreg q[3];
+creg c[3];
+h q[0];
+cx q[0],q[2];
+zrot(pi/4) q[0];
+xxrot(pi/4) q[0],q[2];
+gate test d0,d1{
+    xxrot(pi/4) d0,d1;
+    zrot(pi/4) d1;
+}
+test q[0],q[1];
+if(c == 3) test q[0],q[1];
+measure q -> c;
+"""
     fname = "sample.qasm"
     fout = open(fname,"w")
     fout.write(qasmText)
     fout.close()
 
-    sim = QasmSimulator(file=fname,backendName="gpu",verbose=False)
+    sim = QasmSimulator(file=fname,backendName="cython",verbose=False)
     sim.execute()
     tr = sim.getTrace()
     vec = sim.getState()
     vecStr = sim.getStringRep()
+    sam = sim.getSample(1024)
     print("state vec: ", vec)
     print("trace: ",tr)
     print("braket rep:", vecStr)
+    print("sample: ",sam)
 
 #gpuTest()
 #qasmTextTest()

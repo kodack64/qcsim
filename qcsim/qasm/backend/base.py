@@ -3,7 +3,7 @@ class QasmBackendBase:
     basisGates = ""
     def __init__(self,verbose=False):
         raise NotImplementedError("abstract class")
-    def simulate(self,circuitJson):
+    def simulate(self,circuitJson,qasm):
         raise NotImplementedError("abstract class")
     def getState(self):
         raise NotImplementedError("abstract class")
