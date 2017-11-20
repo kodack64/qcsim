@@ -1,10 +1,10 @@
 # qcsim
-Quantum circuit simulator on various devices
+Quantum circuit simulator for various devices
 
 ---
 
 ### Overview
-Simulating quantum circuits by updating state vector with CPU, GPU.
+Simulating quantum circuits by updating state vector with CPU and GPU.
 
 ### Usage
 
@@ -53,6 +53,26 @@ sim.execute()
 vec = sim.getState()
 ```
 qiskit-sdk is used for converting QASM to Json.
+
+Submit QASM to IBMQuantumExperience:
+```python
+from qcsim.qasm import QasmSimulator
+qasmText = \
+"""
+OPENQASM 2.0;
+include \"qelib1.inc\";
+include \"qelib2.inc\";
+qreg q[3];
+creg c[3];
+h q[0];
+cx q[0],q[2];
+measure q -> c;
+"""
+sim = QasmSimulator(data=qasmText,backendName="ibmqx")
+sim.execute()
+sample = sim.getSample(1024)
+```
+To access IBMQX, rename "apikey.env.sample" to "apikey.env" and paste API token.
 
 ### Backend
 - cpu : use numpy-native function
