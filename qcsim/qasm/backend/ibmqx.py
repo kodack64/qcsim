@@ -31,7 +31,7 @@ class QasmBackendIbmqx(QasmBackendBase):
         return None
 
     def getSample(self,sampleCount=1):
-        print(self.qasm)
+        #print(self.qasm)
         res = self.api.run_experiment(qasm = self.qasm,backend="simulator",shots=sampleCount)
         if( "error" in res):
             return res["error"]

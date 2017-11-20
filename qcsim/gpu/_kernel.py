@@ -5,7 +5,7 @@ list of kernel function for gate operation
 
 import cupy as cp
 
-class KernelList():
+class KernelList:
     ker_X = cp.ElementwiseKernel(
     in_params = "raw T x, int32 k",
     out_params = "T y",
@@ -220,14 +220,20 @@ class KernelList():
     )
 
     ker_U = cp.ElementwiseKernel(
-    in_params = "raw T x, int32 k, thrust::complex<double> u00, thrust::complex<double> u01, thrust::complex<double> u10, thrust::complex<double> u11",
+    in_params = "raw T x, int32 k, float64 t0, float64 t1, float64 t2",
     out_params = "T y",
     loop_prep = """
     int mask = 1<<k;
+    double t12p = (t1+t2)/2;
+    double t12m = (t1-t2)/2;
+    thrust::complex<double> u00 = thrust::complex<double>(cos(t12p),sin(-t12p)) * cos(t0/2);
+    thrust::complex<double> u01 = thrust::complex<double>(-cos(t12m),-sin(-t12m)) * sin(t0/2);
+    thrust::complex<double> u10 = thrust::complex<double>(cos(t12m),sin(t12m)) * sin(t0/2);
+    thrust::complex<double> u11 = thrust::complex<double>(cos(t12p),sin(t12p)) * cos(t0/2);
     """,
     operation = """
-    if(i&mask==0) y = u00*x[i] + u01*x[i^mask];
-    else y = u10*x[i^mask] + u11*x[i];
+    if(i&mask) y = u10*x[i^mask] + u11*x[i];
+    else y = u00*x[i] + u01*x[i^mask];
     """,
     name = "U",
     )
@@ -263,9 +269,11 @@ class KernelList():
     matchgate = [ker_Zrot,ker_XXrot]
     continuusGate = oneRot+twoRot
 
+    genericGate = [ker_U]
+
     measurement = [ker_MeasZ0,ker_MeasZ1]
 
-    allGate = discreteGate + continuusGate + measurement
+    allGate = discreteGate + continuusGate + measurement + genericGate
     allGateName = [g.name for g in allGate]
 
     # require target

@@ -5,11 +5,8 @@ class of quantum circuit simulator
 
 import numpy as np
 
-try:
-    import cupy as cp
-    from ._kernel import KernelList as qcgate
-except:
-    pass
+import cupy as cp
+from ._kernel import KernelList as qcgate
 
 class GpuSimulator():
     def __init__(self,n,verbose=False):
@@ -77,11 +74,8 @@ class GpuSimulator():
             self.currentTrace = None
         elif(gate in [qcgate.ker_U]):
             if(not self.__bound(ind1)): raise IndexError("ind1 is out of range in "+gateName)
-            u0 = np.exp(-1j*(theta[1]+theta[2])/2.) * np.cos(theta[0]/2.)
-            u1 = -np.exp(-1j*(theta[1]-theta[2])/2.) * np.sin(theta[0]/2.)
-            u2 = np.exp(1j*(theta[1]-theta[2])/2.) * np.sin(theta[0]/2.)
-            u3 = np.exp(1j*(theta[1]+theta[2])/2.) * np.cos(theta[0]/2.)
-            self.nstate = gate(self.state,ind1,u0,u1,u2,u3,self.nstate)
+            #print(theta)
+            self.nstate = gate(self.state,ind1,theta[0],theta[1],theta[2],self.nstate)
             if(self.verbose): print("Generic unitary ({},{},{}) on {}-th qubit with {}".format(theta[0],theta[1],theta[2],ind1,gateName))
             self.currentTrace = None
         else:

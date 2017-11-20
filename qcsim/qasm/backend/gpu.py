@@ -86,9 +86,7 @@ class QasmBackendGpu(QasmBackendBase):
                 self.sim.normalize()
 
             elif(gateOps in ["U"]):
-                self.sim.apply("Zrot",gateTargets[0],theta=params[2])
-                self.sim.apply("Yrot",gateTargets[0],theta=params[0])
-                self.sim.apply("Zrot",gateTargets[0],theta=params[1])
+                self.sim.apply("U",gateTargets[0],theta=params)
 
             else:
                 print(" !!! {} is not supported !!!".format(gateOps))

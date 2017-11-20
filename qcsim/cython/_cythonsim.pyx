@@ -94,12 +94,14 @@ cdef class CythonSimulator:
         gate = gate.upper()
 
         if(gate.upper() == "U"):
+            #print(param)
             if(len(param)==3):
                 u0 = np.exp(-1j*(param[1]+param[2])/2.) * np.cos(param[0]/2.)
                 u1 = -np.exp(-1j*(param[1]-param[2])/2.) * np.sin(param[0]/2.)
                 u2 = np.exp(1j*(param[1]-param[2])/2.) * np.sin(param[0]/2.)
                 u3 = np.exp(1j*(param[1]+param[2])/2.) * np.cos(param[0]/2.)
                 param = [u0,u1,u2,u3]
+            #print(param)
             applyU(self.state,self.nstate,self.dim,target[0],np.array(param))
         elif(gate.upper() == "CX"):
             applyCX(self.state,self.nstate,self.dim,target[0],control[0])

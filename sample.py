@@ -1,5 +1,11 @@
 
+import subprocess
+res = subprocess.Popen(["python","setup.py","build_ext","-i"],stdout = subprocess.PIPE).communicate()
+
+from qcsim.cpu import CpuSimulator
 from qcsim.gpu import GpuSimulator
+from qcsim.cython import CythonSimulator
+from qcsim.cythonomp import CythonOmpSimulator
 from qcsim.qasm import QasmSimulator
 import numpy as np
 
@@ -46,35 +52,53 @@ def qasmFileTest():
 OPENQASM 2.0;
 include \"qelib1.inc\";
 include \"qelib2.inc\";
-qreg q[3];
-creg c[3];
+qreg q[2];
+creg c[2];
 h q[0];
-cx q[0],q[2];
-zrot(pi/4) q[0];
-xxrot(pi/4) q[0],q[2];
-gate test d0,d1{
-    xxrot(pi/4) d0,d1;
-    zrot(pi/4) d1;
-}
-test q[0],q[1];
-if(c == 3) test q[0],q[1];
-measure q -> c;
+cx q[0],q[1];
+rz(pi/4) q[0];
+x q[0];
+rx(pi/16) q[1];
+cz q[0],q[1];
+t q[1];
+//xxrot(pi/4) q[0],q[2];
+//gate test d0,d1{
+//    xxrot(pi/4) d0,d1;
+//    zrot(pi/4) d1;
+//}
+//test q[0],q[1];
+//measure q -> c;
 """
     fname = "sample.qasm"
     fout = open(fname,"w")
     fout.write(qasmText)
     fout.close()
 
-    sim = QasmSimulator(file=fname,backendName="cython",verbose=False)
-    sim.execute()
-    tr = sim.getTrace()
-    vec = sim.getState()
-    vecStr = sim.getStringRep()
-    sam = sim.getSample(1024)
-    print("state vec: ", vec)
-    print("trace: ",tr)
-    print("braket rep:", vecStr)
-    print("sample: ",sam)
+    backends = ["cpu","gpu","cython","cythonomp","ibmqx"]
+    stateVecs = []
+    for backend in backends:
+        sim = QasmSimulator(file=fname,backendName=backend,verbose=False)
+        sim.execute()
+        sam = sim.getSample(1024)
+        print("sample: ",sam)
+
+        if backend != "ibmqx":
+            tr = sim.getTrace()
+            vec = sim.getState()
+            vecStr = sim.getStringRep()
+            stateVecs.append(vec)
+            #print("state vec: ", vec/vec[0])
+            #print("trace: ",tr)
+            print("braket rep:", vecStr)
+
+    for ind in range(len(stateVecs)):
+        mind = np.argmax(np.abs(stateVecs[ind])>1e-10)
+        stateVecs[ind] /= stateVecs[ind][mind]
+        print(stateVecs[ind])
+    for y in range(len(stateVecs)):
+        for x in range(len(stateVecs)):
+            print("OK " if (np.abs(stateVecs[y] - stateVecs[x])<1e-10).all() else "NG ",end="")
+        print()
 
 #gpuTest()
 #qasmTextTest()
