@@ -46,9 +46,10 @@ cdef void applyCX(double complex[:] s, double complex[:] ns,int dim, int target,
 @cython.wraparound(False)
 cdef void applyMeasure(double complex[:] s, double complex[:] ns,int dim, int target, int value):
     cdef int mask = 1<<target
+    cdef int check = value<<target
     cdef int i
     for i in range(dim):
-        if(i&mask == value):
+        if(i&mask == check):
             ns[i] = s[i]
         else:
             ns[i] = 0

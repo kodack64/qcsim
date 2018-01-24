@@ -62,11 +62,11 @@ rx(pi/16) q[1];
 cz q[0],q[1];
 t q[1];
 //xxrot(pi/4) q[0],q[2];
-//gate test d0,d1{
-//    xxrot(pi/4) d0,d1;
-//    zrot(pi/4) d1;
-//}
-//test q[0],q[1];
+gate test d0,d1{
+    xxrot(pi/4) d0,d1;
+    zrot(pi/4) d1;
+}
+test q[0],q[1];
 //measure q -> c;
 """
     fname = "sample.qasm"
