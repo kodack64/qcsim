@@ -43,6 +43,9 @@ int meas(const unsigned int target) {
 	g_stateBuf = ptr;
 	return res;
 }
+void reset() {
+	op_init(g_state, g_dim);
+}
 void release() {
 	closeDevice();
 	stateRelease(g_state);

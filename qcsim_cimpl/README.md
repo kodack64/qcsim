@@ -6,9 +6,10 @@ Quantum circuit simulator with C and CUDA
 ## Build and Requirements
 
 Developped with Microsoft Visual Studio 2015 Community with CUDA 8.0.
-I Confirmed gcc-5.3.0 can compile it.
-Speed comparison (time per local operation) is shown below.
+Comparison about time-per-gate is shown below.
 ![speed_compare](./stat.png)
+
+Note that the tractable number of qubits under GPU is limited around 27 due to memory.
 
 ## Usage
 
@@ -20,8 +21,8 @@ We can operate quantum state with lines of commands.
 The first integer is recognized as the num_of_qubit.
 ```
 [num_of_qubit]
-[message1]
-[message2]
+[operation1]
+[operation2]
 ...
 ```
 
@@ -113,8 +114,11 @@ Release the reserved memory
 ##### void cx(unsigned int target, unsigned int control)
 CNOT
 
-##### void meas(unsigned int target)
-Measurement,
+##### int meas(unsigned int target)
+Measurement, and returns outcome bit.
+
+##### void reset()
+Reset quantum state to |0>
 
 #### Example
 For example, in the case of python,
