@@ -1,10 +1,7 @@
 # qcsim
-Quantum circuit simulator for various devices
+Quantum circuit simulator with python
 
 ---
-
-### Overview
-Simulating quantum circuits by updating state vector with CPU and GPU.
 
 ### Usage
 
@@ -77,7 +74,7 @@ To access IBMQX, rename "apikey.env.sample" to "apikey.env" and paste API token.
 ### Backend
 - cpu : use numpy-native function
 - cython : use cython-native function
-- cythonomp : use cython-native function with parallel
+- cythonomp : use cython-native function with OpenMP
 - gpu : use GPU with CuPy
 - ibmq : submit qasm to IBMQuantumExperience
 
@@ -87,6 +84,3 @@ To access IBMQX, rename "apikey.env.sample" to "apikey.env" and paste API token.
 - cupy
 - IBMQuantumExperience
 - qiskit-sdk
-
-### Note
-- Result is not tested

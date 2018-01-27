@@ -10,6 +10,53 @@
 #include "func.h"
 #include "allocate.h"
 
+#ifdef DLL_EXPORT
+unsigned int g_numQubit;
+size_t g_dim;
+double* g_state;
+double* g_stateBuf;
+
+void init(const unsigned int n) {
+	g_numQubit = n;
+	g_dim = ((size_t)1) << n;
+	initDevice();
+	g_state = stateAllocate(n);
+	g_stateBuf = stateAllocate(n);
+	op_init(g_state,g_dim);
+}
+void u(const unsigned int target, const double u1, const double u2, const double u3) {
+	op_u(g_state,g_stateBuf,g_dim,target,u1,u2,u3);
+	double* ptr = g_state;
+	g_state = g_stateBuf;
+	g_stateBuf = ptr;
+}
+void cx(const unsigned int target, const unsigned int control) {
+	op_cx(g_state, g_stateBuf, g_dim, target, control);
+	double* ptr = g_state;
+	g_state = g_stateBuf;
+	g_stateBuf = ptr;
+}
+int meas(const unsigned int target) {
+	int res = op_meas(g_state, g_stateBuf, g_dim, target);
+	double* ptr = g_state;
+	g_state = g_stateBuf;
+	g_stateBuf = ptr;
+	return res;
+}
+void release() {
+	closeDevice();
+	stateRelease(g_state);
+	stateRelease(g_stateBuf);
+}
+#endif
+
+
+
+
+
+
+
+
 int simulateConsoleStream() {
 	return simulateFileStream(stdin, stdout);
 }

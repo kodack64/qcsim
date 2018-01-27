@@ -1,22 +1,23 @@
 # qcsim
-Quantum circuit simulator for various devices and languages
+Quantum circuit simulator for various devices and languages.
 
 ---
 
 ### Overview
-Simulating quantum circuits by updating state vector with CPU and GPU.
+Tracking 2^n complex valued state vector.
 
 ### qcsim_pythonimpl
 
 Python implementation of quantum circuit simulator.
 Implementation with numpy, cython, cython-opnemp, cupy, and ibmq.
+Simulator can execute QASM through qiskit-sdk.
 
 ### qcsim_cimpl
 
-C (nvcc) Implementation of quantum circuit simulator.
+C Implementation of quantum circuit simulator.
 Implementation with C, C-openmp, and CUDA.
 
-### qcsim_cpp_testimplt
+### qcsim_cpp_testimplt (for test)
 
 C++ Implementation of quantum circuit simulator for test.
 Implementation with C++, C++-openmp, and CUDA.
