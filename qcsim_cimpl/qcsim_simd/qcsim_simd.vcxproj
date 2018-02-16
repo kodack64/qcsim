@@ -27,9 +27,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DF95CCD0-BAF0-44C9-B0FA-5056096D654A}</ProjectGuid>
+    <ProjectGuid>{15BFD4C9-A573-4888-AEE8-6410D33E006C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>qcsim_c</RootNamespace>
+    <RootNamespace>qcsim_simd</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -135,6 +135,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -184,6 +185,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -201,6 +203,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AdditionalOptions>/D "DLL_EXPORT" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -217,8 +220,8 @@
     <ClInclude Include="..\qcsim_cuda\simulator.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\qcsim_cuda\allocate_c.c" />
-    <ClCompile Include="..\qcsim_cuda\func_c.c" />
+    <ClCompile Include="..\qcsim_cuda\allocate_simd.c" />
+    <ClCompile Include="..\qcsim_cuda\func_simd.c" />
     <ClCompile Include="..\qcsim_cuda\main.c" />
     <ClCompile Include="..\qcsim_cuda\simulator.c" />
   </ItemGroup>

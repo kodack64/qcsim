@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 
 path = "./x64/ReleaseDLL/"
 #dllNames = ["qcsim_c.dll","qcsim_omp.dll","qcsim_cuda.dll"]
-dllNames = ["qcsim_cuda.dll"]
-maxn = 27
+#dllNames = ["qcsim_cuda.dll"]
+#dllNames = ["qcsim_c.dll","qcsim_omp.dll"]
+dllNames = ["qcsim_simd.dll"]
+maxn = 24
 
 for dllName in dllNames:
 	dll = cdll.LoadLibrary(path+dllName)
 	fout = open("{}.txt".format(dllName.replace(".dll","")),"w")
-	for n in np.arange(2,27,1):
+	for n in np.arange(2,maxn+1,1):
 		dll.init(c_int(n))
 		
 		st = time.time()

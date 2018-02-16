@@ -5,6 +5,9 @@
 #include "func.h"
 #include "random.h"
 
+#define MIN(p,q) (p<q?q:p)
+#define MAX(p,q) (p>q?q:p)
+
 /*
 n-qubit non-unitary operation
 initialize all qubits
@@ -19,10 +22,11 @@ void op_init(double* nstate, const size_t dim) {
 1qubit unitary operation
 u1,u2,u3 is equivalnent to U(\theta,\phi,\lambda) in QASM
 */
-void op_u(const double* state, double* nstate, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
-	long long i;
-	size_t tmp;
-	const long long targetMask = ((size_t)1) << target;
+void op_u(double* state, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
+	signed long long i;
+	signed long long maxind = (signed) (dim>>1);
+	const size_t targetMask = ((size_t)1) << target;
+	const size_t targetMaskm = targetMask - 1;
 	double u00r, u01r, u10r, u11r, u00i, u01i, u10i, u11i;
 
 	u00r = cos((u2 + u3) / 2) * cos(u1 / 2);
@@ -35,16 +39,17 @@ void op_u(const double* state, double* nstate, const size_t dim, const unsigned 
 	u11i = sin((u2 + u3) / 2) * cos(u1 / 2);
 
 #pragma omp parallel for
-	for (i = 0; i < (signed)dim; i++) {
-		tmp = i^targetMask;
-		if ((i&targetMask) == 0) {
-			nstate[2 * i] = u00r * state[2 * i] - u00i * state[2 * i + 1] + u01r * state[2 * tmp] - u01i * state[2 * tmp + 1];
-			nstate[2 * i + 1] = u00r * state[2 * i + 1] + u00i * state[2 * i] + u01r * state[2 * tmp + 1] + u01i * state[2 * tmp];
-		}
-		else {
-			nstate[2 * i] = u10r * state[2 * tmp] - u10i * state[2 * tmp + 1] + u11r * state[2 * i] - u11i * state[2 * i + 1];
-			nstate[2 * i + 1] = u10r * state[2 * tmp + 1] + u10i * state[2 * tmp] + u11r * state[2 * i + 1] + u11i * state[2 * i];
-		}
+	for (i = 0; i < maxind; i++) {
+		size_t t1 = (i&targetMaskm) ^ ((i&(~targetMaskm)) << 1);
+		size_t t2 = t1^targetMask;
+		double a1r = state[2 * t1];
+		double a1i = state[2 * t1 + 1];
+		double a2r = state[2 * t2];
+		double a2i = state[2 * t2 + 1];
+		state[2 * t1] = u00r * a1r - u00i * a1i + u01r * a2r - u01i * a2i;
+		state[2 * t1 + 1] = u00i * a1r + u00r * a1i + u01i * a2r + u01r * a2i;
+		state[2 * t2] = u10r * a1r - u10i * a1i + u11r * a2r - u11i * a2i;
+		state[2 * t2 + 1] = u10i * a1r + u10r * a1i + u11i * a2r + u11r * a2i;
 	}
 }
 
@@ -55,22 +60,27 @@ control not
 
 "target" must be different from "control"
 */
-void op_cx(const double* state, double* nstate, const size_t dim, const unsigned int target, const unsigned int control) {
-	long long i;
-	size_t tmp;
+void op_cx(double* state, const size_t dim, const unsigned int target, const unsigned int control) {
+	signed long long i;
+	signed long long maxind = (signed)(dim>>2);
 	const size_t targetMask = ((size_t)1) << target;
 	const size_t controlMask = ((size_t)1) << control;
+	const size_t mask1 = (((size_t)1) << MIN(target, control)) - 1;
+	const size_t mask2 = (((size_t)1) << MAX(target, control)) - 1;
 #pragma omp parallel for
-	for (i = 0; i < (signed)dim; i++) {
-		if (i&controlMask) {
-			tmp = i^targetMask;
-			nstate[2 * i] = state[2 * tmp];
-			nstate[2 * i + 1] = state[2 * tmp + 1];
-		}
-		else {
-			nstate[2 * i] = state[2 * i];
-			nstate[2 * i + 1] = state[2 * i + 1];
-		}
+	for (i = 0; i < maxind; i++) {
+		size_t t1, t2;
+		t1 = (i&mask1) ^ ((i&(~mask1)) << 1);
+		t1 = (t1&mask2) ^ ((t1&(~mask2)) << 1) ^ controlMask;
+		t2 = t1^targetMask;
+		double a1r = state[2 * t1];
+		double a1i = state[2 * t1 + 1];
+		double a2r = state[2 * t2];
+		double a2i = state[2 * t2 + 1];
+		state[2 * t1] = a2r;
+		state[2 * t1 + 1] = a2i;
+		state[2 * t2] = a1r;
+		state[2 * t2 + 1] = a1i;
 	}
 }
 
@@ -177,7 +187,7 @@ void dump_vector(const double* state, const size_t dim, FILE* outStream) {
 	size_t i;
 	double norm = 0.;
 	for (i = 0; i < dim; i++) {
-		fprintf(outStream, "%lld : %lf , %lf\n", i, state[2 * i], state[2 * i + 1]);
+		fprintf(outStream, "%zd : %lf , %lf\n", i, state[2 * i], state[2 * i + 1]);
 		norm += state[2 * i] * state[2 * i] + state[2 * i + 1] * state[2 * i + 1];
 	}
 	printf("norm :%lf\n", norm);

@@ -2,6 +2,8 @@
 #include <math.h>
 #include "func.h"
 #include "random.h"
+#include <xmmintrin.h>
+#include <immintrin.h>
 
 #define MIN(p,q) (p<q?q:p)
 #define MAX(p,q) (p>q?q:p)
@@ -34,18 +36,42 @@ void op_u(double* state, const size_t dim, const unsigned int target, const doub
 	u10i = sin((u2 - u3) / 2) * sin(u1 / 2);
 	u11r = cos((u2 + u3) / 2) * cos(u1 / 2);
 	u11i = sin((u2 + u3) / 2) * cos(u1 / 2);
+	double v1r[4] = { u00r,-u00i,u01r,-u01i };
+	double v1i[4] = { u00i, u00r,u01i, u01r };
+	double v2r[4] = { u10r,-u10i,u11r,-u11i };
+	double v2i[4] = { u10i, u10r,u11i, u11r };
+	__m256d w1r = _mm256_load_pd(v1r);
+	__m256d w1i = _mm256_load_pd(v1i);
+	__m256d w2r = _mm256_load_pd(v2r);
+	__m256d w2i = _mm256_load_pd(v2i);
 
 	for (i = 0; i < dim / 2; i++) {
 		size_t t1 = (i&targetMaskm) ^ ((i&(~targetMaskm)) << 1);
 		size_t t2 = t1^targetMask;
+		__m256d wva, mva;
 		double a1r = state[2 * t1];
 		double a1i = state[2 * t1 + 1];
 		double a2r = state[2 * t2];
 		double a2i = state[2 * t2 + 1];
-		state[2*t1]		= u00r * a1r - u00i * a1i + u01r * a2r - u01i * a2i;
-		state[2*t1+1]	= u00i * a1r + u00r * a1i + u01i * a2r + u01r * a2i;
-		state[2*t2]		= u10r * a1r - u10i * a1i + u11r * a2r - u11i * a2i;
-		state[2*t2+1]	= u10i * a1r + u10r * a1i + u11i * a2r + u11r * a2i;
+
+		double va[4] = { a1r,a1i,a2r,a2i };
+		wva = _mm256_load_pd(va);
+
+		mva = _mm256_mul_pd(wva, w1r);
+		_mm256_store_pd(va, mva);
+		state[2 * t1]		= va[0] + va[1] + va[2] + va[3];
+
+		mva = _mm256_mul_pd(wva, w1i);
+		_mm256_store_pd(va, mva);
+		state[2 * t1 + 1] = va[0] + va[1] + va[2] + va[3];
+
+		mva = _mm256_mul_pd(wva, w2r);
+		_mm256_store_pd(va, mva);
+		state[2 * t2] = va[0] + va[1] + va[2] + va[3];
+
+		mva = _mm256_mul_pd(wva, w2i);
+		_mm256_store_pd(va, mva);
+		state[2 * t2 + 1] = va[0] + va[1] + va[2] + va[3];
 	}
 }
 

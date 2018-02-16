@@ -97,8 +97,8 @@ int simulateFileStream(FILE* inStream,FILE* outStream) {
 			if (ret == EOF) goto Error_InvalidMessage;
 			if (!(0 <= targetQubit && targetQubit < n)) goto Error_OutOfRange;
 
-			op_u(state, stateBuf, dim, targetQubit, u1, u2, u3);
-			swapFlag = 1;
+			op_u(state, dim, targetQubit, u1, u2, u3);
+			swapFlag = 0;
 		}
 
 		// cx op
@@ -109,8 +109,8 @@ int simulateFileStream(FILE* inStream,FILE* outStream) {
 			if (!(0 <= controlQubit && controlQubit < n)) goto Error_OutOfRange;
 			if (controlQubit == targetQubit) goto Error_SameControlTarget;
 
-			op_cx(state, stateBuf, dim, targetQubit, controlQubit);
-			swapFlag = 1;
+			op_cx(state, dim, targetQubit, controlQubit);
+			swapFlag = 0;
 		}
 
 		// meas op
