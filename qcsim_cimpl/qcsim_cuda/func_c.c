@@ -17,10 +17,10 @@ void op_init(double* nstate, const size_t dim) {
 1qubit unitary operation
 u1,u2,u3 is equivalnent to U(\theta,\phi,\lambda) in QASM
 */
-void op_u(const double* state, double* nstate, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
+void op_u(double* state, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
 	size_t i;
-	size_t tmp;
 	const size_t targetMask = ((size_t)1) << target;
+	const size_t targetMaskm = targetMask - 1;
 	double u00r, u01r, u10r, u11r, u00i, u01i, u10i, u11i;
 
 	u00r = cos((u2 + u3) / 2) * cos(u1 / 2);
@@ -32,16 +32,17 @@ void op_u(const double* state, double* nstate, const size_t dim, const unsigned 
 	u11r = cos((u2 + u3) / 2) * cos(u1 / 2);
 	u11i = sin((u2 + u3) / 2) * cos(u1 / 2);
 
-	for (i = 0; i < dim; i++) {
-		tmp = i^targetMask;
-		if ((i&targetMask) == 0) {
-			nstate[2 * i] = u00r * state[2 * i] - u00i * state[2 * i + 1] + u01r * state[2 * tmp] - u01i * state[2 * tmp + 1];
-			nstate[2 * i + 1] = u00r * state[2 * i + 1] + u00i * state[2 * i] + u01r * state[2 * tmp + 1] + u01i * state[2 * tmp];
-		}
-		else {
-			nstate[2 * i] = u10r * state[2 * tmp] - u10i * state[2 * tmp + 1] + u11r * state[2 * i] - u11i * state[2 * i + 1];
-			nstate[2 * i + 1] = u10r * state[2 * tmp + 1] + u10i * state[2 * tmp] + u11r * state[2 * i + 1] + u11i * state[2 * i];
-		}
+	for (i = 0; i < dim / 2; i++) {
+		size_t t1 = (i&targetMaskm) ^ ((i&(~targetMaskm)) << 1);
+		size_t t2 = t1^targetMask;
+		double a1r = state[2 * t1];
+		double a1i = state[2 * t1 + 1];
+		double a2r = state[2 * t2];
+		double a2i = state[2 * t2 + 1];
+		state[2*t1]		= u00r * a1r - u00i * a1i + u01r * a2r - u01i * a2i;
+		state[2*t1+1]	= u00i * a1r + u00r * a1i + u01i * a2r + u01r * a2i;
+		state[2*t2]		= u10r * a1r - u10i * a1i + u11r * a2r - u11i * a2i;
+		state[2*t2+1]	= u10i * a1r + u10r * a1i + u11i * a2r + u11r * a2i;
 	}
 }
 
@@ -52,11 +53,29 @@ control not
 
 "target" must be different from "control"
 */
-void op_cx(const double* state, double* nstate, const size_t dim, const unsigned int target, const unsigned int control) {
+void op_cx(double* state, const size_t dim, const unsigned int target, const unsigned int control) {
 	size_t i;
 	size_t tmp;
 	const size_t targetMask = ((size_t)1) << target;
+	const size_t targetMaskm = targetMask - 1;
 	const size_t controlMask = ((size_t)1) << control;
+	const size_t controlMaskm = controlMask-1;
+	// does not work when cont < target
+	for (i = 0; i < dim / 4; i++) {
+		size_t t1;
+		t1 = (i&targetMaskm) ^ ((i&(~targetMaskm)) << 1);
+		t1 = (t1&controlMaskm) ^ ((t1&(~controlMaskm)) << 1) ^ controlMask;
+		size_t t2 = t1^targetMask;
+		double a1r = state[2 * t1];
+		double a1i = state[2 * t1 + 1];
+		double a2r = state[2 * t2];
+		double a2i = state[2 * t2 + 1];
+		state[2 * t1] = a2r;
+		state[2 * t1 + 1] = a2i;
+		state[2 * t2] = a1r;
+		state[2 * t2 + 1] = a1i;
+	}
+	/*
 	for (i = 0; i < dim; i++) {
 		if (i&controlMask) {
 			tmp = i^targetMask;
@@ -68,6 +87,7 @@ void op_cx(const double* state, double* nstate, const size_t dim, const unsigned
 			nstate[2 * i + 1] = state[2 * i + 1];
 		}
 	}
+	*/
 }
 
 /*

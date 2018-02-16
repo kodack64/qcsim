@@ -25,16 +25,10 @@ void init(const unsigned int n) {
 	op_init(g_state,g_dim);
 }
 void u(const unsigned int target, const double u1, const double u2, const double u3) {
-	op_u(g_state,g_stateBuf,g_dim,target,u1,u2,u3);
-	double* ptr = g_state;
-	g_state = g_stateBuf;
-	g_stateBuf = ptr;
+	op_u(g_state,g_dim,target,u1,u2,u3);
 }
 void cx(const unsigned int target, const unsigned int control) {
-	op_cx(g_state, g_stateBuf, g_dim, target, control);
-	double* ptr = g_state;
-	g_state = g_stateBuf;
-	g_stateBuf = ptr;
+	op_cx(g_state, g_dim, target, control);
 }
 int meas(const unsigned int target) {
 	int res = op_meas(g_state, g_stateBuf, g_dim, target);

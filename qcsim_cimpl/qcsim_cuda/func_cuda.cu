@@ -30,6 +30,7 @@ void op_init(double* nstate, const size_t dim) {
 	blockCount = max((unsigned int)dim/g_maxThreadsPerBlock,1);
 
 	kernel_op_init << < blockCount, threadCount >> > (nstate, dim);
+	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) { 
 		fprintf(stderr, "cuda op_init failed : %s\n", cudaGetErrorString(cudaStatus)); 
@@ -79,6 +80,7 @@ void op_u(const double* state, double* nstate, const size_t dim, const unsigned 
 	blockCount = max((unsigned int)dim / g_maxThreadsPerBlock, 1);
 
 	kernel_op_u << < blockCount, threadCount >> > (state, nstate, dim, targetMask, u00r, u00i, u01r, u01i, u10r, u10i, u11r, u11i);
+	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cuda op_u failed : %s\n", cudaGetErrorString(cudaStatus));
@@ -118,6 +120,7 @@ void op_cx(const double* state, double* nstate, const size_t dim, const unsigned
 	blockCount = max((unsigned int)dim / g_maxThreadsPerBlock, 1);
 
 	kernel_op_cx << < blockCount, threadCount >> > (state, nstate, dim, targetMask, controlMask);
+	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cuda op_cx failed : %s\n", cudaGetErrorString(cudaStatus));
@@ -153,6 +156,7 @@ void op_post0(const double* state, double* nstate, const size_t dim, const unsig
 	blockCount = max((unsigned int)dim / g_maxThreadsPerBlock, 1);
 
 	kernel_op_post0 << <blockCount, threadCount >> > (state, nstate, dim, targetMask, norm);
+	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cuda op_post0 failed : %s\n", cudaGetErrorString(cudaStatus));
@@ -187,6 +191,7 @@ void op_post1(const double* state, double* nstate, const size_t dim, const unsig
 	blockCount = max((unsigned int)dim / g_maxThreadsPerBlock, 1);
 
 	kernel_op_post1 << <blockCount, threadCount >> > (state, nstate, dim, targetMask, norm);
+	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cuda op_post1 failed : %s\n", cudaGetErrorString(cudaStatus));
@@ -340,6 +345,7 @@ double stat_prob1(const double* state, double* workspace, const size_t dim, cons
 		double* toPtr = workspace + cursor + N;
 		if (threadCount == 1024 && blockCount > 1)	kernel_stat_sum_optimized<1024> << <blockCount, threadCount, sharedMemSize >> > (fromPtr, toPtr , N);
 		else										kernel_stat_sum << <blockCount, threadCount, sharedMemSize >> > (fromPtr, toPtr, N);
+		cudaThreadSynchronize();
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "stat_prob1 loop fail : %s\n", cudaGetErrorString(cudaStatus));

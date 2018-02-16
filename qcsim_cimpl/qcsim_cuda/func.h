@@ -12,7 +12,7 @@ void op_init(double* nstate, const size_t dim);
 1qubit unitary operation
 u1,u2,u3 is equivalnent to U(\theta,\phi,\lambda) in QASM
 */
-void op_u(const double* state, double* nstate, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3);
+void op_u(double* state, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3);
 
 /*
 2qubit unitary operation
@@ -20,7 +20,7 @@ control not
 
 "target" must be different from "control"
 */
-void op_cx(const double* state, double* nstate, const size_t dim, const unsigned int target, const unsigned int control);
+void op_cx(double* state, const size_t dim, const unsigned int target, const unsigned int control);
 
 /*
 1qubit non-unitary operation
