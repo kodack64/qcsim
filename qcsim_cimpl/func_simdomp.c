@@ -4,8 +4,9 @@
 #include "random.h"
 #include <xmmintrin.h>
 #include <immintrin.h>
+#include <omp.h>
 
-#define MIN(p,q) (p<q?q:p)
+#define MIN(p,q) (p<q?p:q)
 #define MAX(p,q) (p>q?q:p)
 
 /*
@@ -23,9 +24,6 @@ void op_init(double* nstate, const size_t dim) {
 u1,u2,u3 is equivalnent to U(\theta,\phi,\lambda) in QASM
 */
 void op_u(double* state, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
-	size_t i;
-	const size_t targetMask = ((size_t)1) << target;
-	const size_t targetMaskm = targetMask - 1;
 	double u00r, u01r, u10r, u11r, u00i, u01i, u10i, u11i;
 
 	u00r = cos((u2 + u3) / 2) * cos(u1 / 2);
@@ -36,42 +34,81 @@ void op_u(double* state, const size_t dim, const unsigned int target, const doub
 	u10i = sin((u2 - u3) / 2) * sin(u1 / 2);
 	u11r = cos((u2 + u3) / 2) * cos(u1 / 2);
 	u11i = sin((u2 + u3) / 2) * cos(u1 / 2);
-	double v1r[4] = { u00r,-u00i,u01r,-u01i };
-	double v1i[4] = { u00i, u00r,u01i, u01r };
-	double v2r[4] = { u10r,-u10i,u11r,-u11i };
-	double v2i[4] = { u10i, u10r,u11i, u11r };
-	__m256d w1r = _mm256_load_pd(v1r);
-	__m256d w1i = _mm256_load_pd(v1i);
-	__m256d w2r = _mm256_load_pd(v2r);
-	__m256d w2i = _mm256_load_pd(v2i);
 
-	for (i = 0; i < dim / 2; i++) {
-		size_t t1 = (i&targetMaskm) ^ ((i&(~targetMaskm)) << 1);
-		size_t t2 = t1^targetMask;
-		__m256d wva, mva;
-		double a1r = state[2 * t1];
-		double a1i = state[2 * t1 + 1];
-		double a2r = state[2 * t2];
-		double a2i = state[2 * t2 + 1];
+	if (target == 0) {
+#pragma omp parallel
+		{
+			const long long maxind = dim / 2;
+			const int corenum = omp_get_num_threads();
+			const long long block = maxind / corenum;
+			const int residual = maxind%corenum;
 
-		double va[4] = { a1r,a1i,a2r,a2i };
-		wva = _mm256_load_pd(va);
+			long long i = 0;
+			const int coreind = omp_get_thread_num();
+			const long long start = block*coreind + MIN(residual,coreind);
+			const long long end = block*(coreind+1) + MIN(residual,coreind+1);
 
-		mva = _mm256_mul_pd(wva, w1r);
-		_mm256_store_pd(va, mva);
-		state[2 * t1]		= va[0] + va[1] + va[2] + va[3];
+			__m256d r0 = _mm256_set_pd(u00r, -u00i, u01r, -u01i);
+			__m256d r1 = _mm256_set_pd(u00i, u00r, u01i, u01r);
+			__m256d r2 = _mm256_set_pd(u10r, -u10i, u11r, -u11i);
+			__m256d r3 = _mm256_set_pd(u10i, u10r, u11i, u11r);
+			for (i = start; i < end; i++) {
+				double* ptr = state + i*4;
+				__m256d st_in0 = _mm256_loadu_pd(ptr);
+				__m256d st_out0 = _mm256_hadd_pd(_mm256_mul_pd(st_in0, r0), _mm256_mul_pd(st_in0, r1));
+				__m256d st_out1 = _mm256_hadd_pd(_mm256_mul_pd(st_in0, r2), _mm256_mul_pd(st_in0, r3));
+				__m256d blend = _mm256_blend_pd(st_out0, st_out1, 0b1100);
+				__m256d perm = _mm256_permute2f128_pd(st_out0, st_out1, 0x21);
+				__m256d st_out = _mm256_add_pd(perm, blend);
+				_mm256_storeu_pd(ptr, st_out);
+			}
+		}
+	}
+	else {
 
-		mva = _mm256_mul_pd(wva, w1i);
-		_mm256_store_pd(va, mva);
-		state[2 * t1 + 1] = va[0] + va[1] + va[2] + va[3];
+#pragma omp parallel
+		{
+			const long long maxind = dim / 4;
+			const int corenum = omp_get_num_threads();
+			const long long block = maxind / corenum;
+			const int residual = maxind%corenum;
 
-		mva = _mm256_mul_pd(wva, w2r);
-		_mm256_store_pd(va, mva);
-		state[2 * t2] = va[0] + va[1] + va[2] + va[3];
+			const size_t targetMask = ((size_t)2) << target;
+			const size_t targetMaskm = targetMask - 1;
 
-		mva = _mm256_mul_pd(wva, w2i);
-		_mm256_store_pd(va, mva);
-		state[2 * t2 + 1] = va[0] + va[1] + va[2] + va[3];
+			long long i = 0;
+			const int coreind = omp_get_thread_num();
+			const long long start = block*coreind + MIN(residual, coreind);
+			const long long end = block*(coreind + 1) + MIN(residual, coreind + 1);
+			__m256d r00 = _mm256_set_pd(u00r, -u00i, u00r, -u00i);
+			__m256d r01 = _mm256_set_pd(u01r, -u01i, u01r, -u01i);
+			__m256d r10 = _mm256_set_pd(u00i, u00r, u00i, u00r);
+			__m256d r11 = _mm256_set_pd(u01i, u01r, u01i, u01r);
+			__m256d r20 = _mm256_set_pd(u10r, -u10i, u11r, -u11i);
+			__m256d r21 = _mm256_set_pd(u10r, -u10i, u11r, -u11i);
+			__m256d r30 = _mm256_set_pd(u10i, u10r, u11i, u11r);
+			__m256d r31 = _mm256_set_pd(u10i, u10r, u11i, u11r);
+			for (i = start ; i < end; i++ ){
+				size_t t = i<<2;
+				t = (t&targetMaskm) ^ ((t&(~targetMaskm)) << 1);
+				double* pt1 = state + t;
+				double* pt2 = state + (t^targetMask);
+
+				__m256d st_in0 = _mm256_loadu_pd(pt1);
+				__m256d st_in1 = _mm256_loadu_pd(pt2);
+
+				__m256d st_out0 = _mm256_add_pd(_mm256_mul_pd(st_in0, r00), _mm256_mul_pd(st_in1, r01));
+				__m256d st_out1 = _mm256_add_pd(_mm256_mul_pd(st_in0, r10), _mm256_mul_pd(st_in1, r11));
+				__m256d st_out01 = _mm256_hadd_pd(st_out1, st_out0);
+				_mm256_storeu_pd(pt1, st_out01);
+
+				__m256d st_out2 = _mm256_add_pd(_mm256_mul_pd(st_in0, r20), _mm256_mul_pd(st_in1, r21));
+				__m256d st_out3 = _mm256_add_pd(_mm256_mul_pd(st_in0, r30), _mm256_mul_pd(st_in1, r31));
+				__m256d st_out23 = _mm256_hadd_pd(st_out2, st_out3);
+				_mm256_storeu_pd(pt2, st_out23);
+
+			}
+		}
 	}
 }
 
@@ -83,12 +120,14 @@ control not
 "target" must be different from "control"
 */
 void op_cx(double* state, const size_t dim, const unsigned int target, const unsigned int control) {
-	size_t i;
 	const size_t targetMask = ((size_t)1) << target;
 	const size_t controlMask = ((size_t)1) << control;
 	const size_t mask1 = (((size_t)1) << MIN(target,control)) - 1;
 	const size_t mask2 = (((size_t)1) << MAX(target, control)) - 1;
-	for (i = 0; i < dim / 4; i++) {
+	const long long maxind = dim / 4;
+	long long  i;
+#pragma omp parallel for
+	for (i = 0; i < maxind; i++) {
 		size_t t1,t2;
 		t1 = (i&mask1) ^ ((i&(~mask1)) << 1);
 		t1 = (t1&mask2) ^ ((t1&(~mask2)) << 1) ^ controlMask;

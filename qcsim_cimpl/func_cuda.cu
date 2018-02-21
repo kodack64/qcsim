@@ -10,6 +10,9 @@ extern "C" {
 }
 #include "common_cuda.h"
 
+#define MIN(p,q) (p<q?p:q)
+#define MAX(p,q) (p>q?p:q)
+
 /*
 n-qubit non-unitary operation
 initialize all qubits
@@ -43,26 +46,27 @@ void op_init(double* nstate, const size_t dim) {
 1qubit unitary operation
 u1,u2,u3 is equivalnent to U(\theta,\phi,\lambda) in QASM
 */
-__global__ void kernel_op_u(const double *state, double* nstate, const size_t dim, const size_t targetMask,
+__global__ void kernel_op_u(double *state, const size_t dim, const size_t targetMask,
 	const double u00r, const double u00i, const double u01r, const double u01i, const double u10r, const double u10i, const double u11r, const double u11i) {
 
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-	unsigned int tmp;
-	while (i < dim) {
-		tmp = i^targetMask;
-		if ((i&targetMask) == 0) {
-			nstate[2 * i] = u00r * state[2 * i] - u00i * state[2 * i + 1] + u01r * state[2 * tmp] - u01i * state[2 * tmp + 1];
-			nstate[2 * i + 1] = u00r * state[2 * i + 1] + u00i * state[2 * i] + u01r * state[2 * tmp + 1] + u01i * state[2 * tmp];
-		}
-		else {
-			nstate[2 * i] = u10r * state[2 * tmp] - u10i * state[2 * tmp + 1] + u11r * state[2 * i] - u11i * state[2 * i + 1];
-			nstate[2 * i + 1] = u10r * state[2 * tmp + 1] + u10i * state[2 * tmp] + u11r * state[2 * i + 1] + u11i * state[2 * i];
-		}
-
+	const unsigned int maxind = dim / 2;
+	const unsigned int targetMaskm = targetMask - 1;
+	while (i < maxind) {
+		size_t t1 = (i&targetMaskm) ^ ((i&(~targetMaskm)) << 1);
+		size_t t2 = t1^targetMask;
+		double a1r = state[2 * t1];
+		double a1i = state[2 * t1 + 1];
+		double a2r = state[2 * t2];
+		double a2i = state[2 * t2 + 1];
+		state[2 * t1] = u00r * a1r - u00i * a1i + u01r * a2r - u01i * a2i;
+		state[2 * t1 + 1] = u00i * a1r + u00r * a1i + u01i * a2r + u01r * a2i;
+		state[2 * t2] = u10r * a1r - u10i * a1i + u11r * a2r - u11i * a2i;
+		state[2 * t2 + 1] = u10i * a1r + u10r * a1i + u11i * a2r + u11r * a2i;
 		i += blockDim.x * gridDim.x;
 	}
 }
-void op_u(const double* state, double* nstate, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
+void op_u(double* state, const size_t dim, const unsigned int target, const double u1, const double u2, const double u3) {
 	const size_t targetMask = ((size_t)1) << target;
 	double u00r, u01r, u10r, u11r, u00i, u01i, u10i, u11i;
 	unsigned int blockCount, threadCount;
@@ -79,7 +83,7 @@ void op_u(const double* state, double* nstate, const size_t dim, const unsigned 
 	threadCount = min((unsigned int)dim, g_maxThreadsPerBlock);
 	blockCount = max((unsigned int)dim / g_maxThreadsPerBlock, 1);
 
-	kernel_op_u << < blockCount, threadCount >> > (state, nstate, dim, targetMask, u00r, u00i, u01r, u01i, u10r, u10i, u11r, u11i);
+	kernel_op_u << < blockCount, threadCount >> > (state, dim, targetMask, u00r, u00i, u01r, u01i, u10r, u10i, u11r, u11i);
 	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -94,24 +98,28 @@ control not
 
 "target" must be different from "control"
 */
-__global__ void kernel_op_cx(const double *state, double* nstate, const size_t dim, const size_t targetMask, const size_t controlMask) {
+__global__ void kernel_op_cx(double *state, const size_t dim, const size_t targetMask, const size_t controlMask) {
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-	unsigned int tmp;
-	while (i < dim) {
-		if (i&controlMask) {
-			tmp = i^targetMask;
-			nstate[2 * i] = state[2 * tmp];
-			nstate[2 * i + 1] = state[2 * tmp + 1];
-		}
-		else {
-			nstate[2 * i] = state[2 * i];
-			nstate[2 * i + 1] = state[2 * i + 1];
-		}
-
+	const unsigned int maxind = dim / 4;
+	const unsigned int mask1 = (min(targetMask, controlMask)) - 1;
+	const unsigned int mask2 = (max(targetMask, controlMask)) - 1;
+	for (i = 0; i < maxind; i++) {
+		size_t t1, t2;
+		t1 = (i&mask1) ^ ((i&(~mask1)) << 1);
+		t1 = (t1&mask2) ^ ((t1&(~mask2)) << 1) ^ controlMask;
+		t2 = t1^targetMask;
+		double a1r = state[2 * t1];
+		double a1i = state[2 * t1 + 1];
+		double a2r = state[2 * t2];
+		double a2i = state[2 * t2 + 1];
+		state[2 * t1] = a2r;
+		state[2 * t1 + 1] = a2i;
+		state[2 * t2] = a1r;
+		state[2 * t2 + 1] = a1i;
 		i += blockDim.x * gridDim.x;
 	}
 }
-void op_cx(const double* state, double* nstate, const size_t dim, const unsigned int target, const unsigned int control) {
+void op_cx(double* state, const size_t dim, const unsigned int target, const unsigned int control) {
 	const size_t targetMask = ((size_t)1) << target;
 	const size_t controlMask = ((size_t)1) << control;
 	unsigned int blockCount, threadCount;
@@ -119,7 +127,7 @@ void op_cx(const double* state, double* nstate, const size_t dim, const unsigned
 	threadCount = min((unsigned int)dim, g_maxThreadsPerBlock);
 	blockCount = max((unsigned int)dim / g_maxThreadsPerBlock, 1);
 
-	kernel_op_cx << < blockCount, threadCount >> > (state, nstate, dim, targetMask, controlMask);
+	kernel_op_cx << < blockCount, threadCount >> > (state, dim, targetMask, controlMask);
 	cudaThreadSynchronize();
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {

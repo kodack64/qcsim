@@ -15,30 +15,30 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\qcsim_cuda\allocate.h">
+    <ClInclude Include="..\allocate.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\qcsim_cuda\func.h">
+    <ClInclude Include="..\func.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\qcsim_cuda\random.h">
+    <ClInclude Include="..\random.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\qcsim_cuda\simulator.h">
+    <ClInclude Include="..\simulator.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\qcsim_cuda\main.c">
+    <ClCompile Include="..\allocate_c.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\qcsim_cuda\simulator.c">
+    <ClCompile Include="..\func_c.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\qcsim_cuda\allocate_c.c">
+    <ClCompile Include="..\main.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\qcsim_cuda\func_c.c">
+    <ClCompile Include="..\simulator.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

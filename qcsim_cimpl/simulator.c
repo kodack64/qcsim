@@ -162,8 +162,6 @@ Error_MemoryError:
 	return 1;
 Error_InvalidMessage:
 	fprintf(stderr, "Message format is invalid\n");
-	stateRelease(state);
-	stateRelease(stateBuf);
 	closeDevice();
 	return 2;
 Error_OutOfRange:

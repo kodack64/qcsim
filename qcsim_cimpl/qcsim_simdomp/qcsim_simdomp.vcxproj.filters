@@ -29,16 +29,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\allocate_omp.c">
+    <ClCompile Include="..\allocate_simdomp.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\func_omp.c">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\simulator.c">
+    <ClCompile Include="..\func_simdomp.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="..\main.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\simulator.c">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

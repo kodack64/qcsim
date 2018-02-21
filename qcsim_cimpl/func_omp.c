@@ -5,7 +5,7 @@
 #include "func.h"
 #include "random.h"
 
-#define MIN(p,q) (p<q?q:p)
+#define MIN(p,q) (p<q?p:q)
 #define MAX(p,q) (p>q?q:p)
 
 /*
@@ -87,21 +87,21 @@ void op_cx(double* state, const size_t dim, const unsigned int target, const uns
 /*
 calculate probability with which we obtain outcome 1
 */
-#define mymin(a,b) ((a>b)?b:a)
 double stat_prob1(const double* state, double* workspace, const size_t dim, const unsigned int target) {
 	const size_t targetMask = ((size_t)1) << target;
 	double prob1 = 0.;
-	int threadCount = (int)mymin((size_t)omp_get_max_threads(),dim);
+	int threadCount = (int)MIN((size_t)omp_get_max_threads(),dim);
 	omp_set_num_threads(threadCount);
 	long long block = dim / threadCount;
 	long long rest = dim%threadCount;
+	int threadInd;
 
 #pragma omp parallel
 	{
 		int threadId = omp_get_thread_num();
 		long long i;
-		long long start = block*threadId + mymin(threadId, rest);
-		long long end = block*(threadId + 1) + mymin(threadId + 1, rest);
+		long long start = block*threadId + MIN(threadId, rest);
+		long long end = block*(threadId + 1) + MIN(threadId + 1, rest);
 		workspace[threadId] = 0;
 		for (i = start; i < end; i++) {
 			if (i&targetMask) {
@@ -110,8 +110,8 @@ double stat_prob1(const double* state, double* workspace, const size_t dim, cons
 			}
 		}
 	}
-	for (int threadId = 0; threadId < threadCount; threadId++) {
-		prob1 += workspace[threadId];
+	for (threadInd = 0; threadInd < threadCount; threadInd++) {
+		prob1 += workspace[threadInd];
 	}
 	return prob1;
 }

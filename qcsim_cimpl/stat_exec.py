@@ -2,18 +2,20 @@
 from ctypes import *
 import numpy as np
 import time
-import matplotlib.pyplot as plt
+import os
 
-path = "./x64/ReleaseDLL/"
-#dllNames = ["qcsim_c.dll","qcsim_omp.dll","qcsim_cuda.dll"]
-#dllNames = ["qcsim_cuda.dll"]
-#dllNames = ["qcsim_c.dll","qcsim_omp.dll"]
-dllNames = ["qcsim_simd.dll"]
-maxn = 24
+path = "./x64/Release_DLL/"
+dllNames = ["qcsim_c.dll","qcsim_omp.dll","qcsim_cuda.dll","qcsim_simd.dll","qcsim_simdomp.dll"]
+maxn = 27
+
 
 for dllName in dllNames:
-	dll = cdll.LoadLibrary(path+dllName)
-	fout = open("{}.txt".format(dllName.replace(".dll","")),"w")
+	print(dllName.replace(".dll",""))
+	if("posix" in os.name):
+		dll = CDLL(dllName.replace("dll","so"))
+	else:
+		dll = cdll.LoadLibrary(path+dllName)
+	fout = open("stat_{}.txt".format(dllName.replace(".dll","")),"w")
 	for n in np.arange(2,maxn+1,1):
 		dll.init(c_int(n))
 		
